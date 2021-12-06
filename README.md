@@ -1,4 +1,4 @@
-Experimenting with various models to tackle the patent similarity/ranking problem. 
+Experimenting with various models to tackle the patent similarity ranking problem. 
 
 Baseline: Language Models that directly predict the similarity score. 
 
