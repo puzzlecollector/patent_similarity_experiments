@@ -1,4 +1,4 @@
-# Patent Document Ranking 
+# Patent Document Ranking Project
 
 Experimenting with various models to tackle the patent similarity ranking problem. 
 
