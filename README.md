@@ -1,3 +1,5 @@
+# Patent Document Ranking 
+
 Experimenting with various models to tackle the patent similarity ranking problem. 
 
 Research: Dense retrieval methods, ensemble of various language models. 
