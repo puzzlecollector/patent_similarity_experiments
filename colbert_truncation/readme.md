@@ -1,4 +1,4 @@
-ColBERT with truncation 
+ColBERT with truncation (first 512 tokens) 
 
 train triples: 311,459 
 
