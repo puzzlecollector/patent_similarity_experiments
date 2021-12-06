@@ -1,7 +1,7 @@
 ColBERT with truncation 
 
-train: 311,459 
+train triples: 311,459 
 
-val: 38,940
+val triples: 38,940
 
-test: 38,943
+test triples: 38,943
