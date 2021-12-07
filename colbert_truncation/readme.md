@@ -7,4 +7,5 @@
 
 3. [Form collections and queries dataframes for inference](https://github.com/puzzlecollector/patent_similarity_experiments/blob/main/colbert_truncation/form_collections_and_queries.ipynb)
 
-#### Miscellaneous 
+#### Validating on a single query example 
+[code for validating on a single query](https://github.com/puzzlecollector/patent_similarity_experiments/blob/main/colbert_truncation/single_query_score_calculation_example.ipynb) 
