@@ -7,5 +7,8 @@
 
 3. [Form collections and queries dataframes for inference](https://github.com/puzzlecollector/patent_similarity_experiments/blob/main/colbert_truncation/form_collections_and_queries.ipynb)
 
+4. [Index, then create FAISS indexing, then retrieve and rerank top 1000 documents per query](https://github.com/puzzlecollector/patent_similarity_experiments/blob/main/colbert_truncation/inference_truncation.ipynb) - Due to time and memory limitations, I have only processed the first 100 queries. 
+
+
 #### Validating on a single query example 
 [code for validating on a single query](https://github.com/puzzlecollector/patent_similarity_experiments/blob/main/colbert_truncation/single_query_score_calculation_example.ipynb) 
