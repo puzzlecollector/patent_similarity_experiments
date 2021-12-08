@@ -1,6 +1,6 @@
 # ColBERT with truncation (first 512 tokens) 
 
-#### <ins> Procedure  </ins>
+#### <ins> Procedure </ins>
 1. [Preprocess json data to form triplets](https://github.com/puzzlecollector/patent_similarity_experiments/blob/main/colbert_truncation/form_claims_triplets.ipynb)
 
 2. [Train ColBERT with triplet data using first 512 tokens](https://github.com/puzzlecollector/patent_similarity_experiments/blob/main/colbert_truncation/train_truncation.ipynb) 
@@ -16,7 +16,7 @@
 
 
 
-#### Experiment Results  
+#### <ins> Experiment Results </ins> 
 Trained with ~310,000 triplets, tested on 100 queries, top 1,000, candidate document size ~80,000: **MRR = 0.208**
 
 Trained with ~350,000 triplets (train+val combined), tested on 100 queries, top 1,000, candidate document size ~80,000: **MRR = 0.212** 
@@ -27,7 +27,7 @@ Trained with ~350,000 triplets (train+val combined), tested on 100 queries, top 
 
 
 
-#### Validating on a single query example 
+#### <ins> Validating on a single query example </ins>
 [code for validating on a single query](https://github.com/puzzlecollector/patent_similarity_experiments/blob/main/colbert_truncation/single_query_score_calculation_example.ipynb) 
 
 
