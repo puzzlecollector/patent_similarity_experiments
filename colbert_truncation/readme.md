@@ -11,9 +11,9 @@
 
 
 #### Experiment Results  
-Trained with ~310,000 triplets, tested on 100 queries, top 1,000, candidate document size = ~80,000: **MRR = 0.208**
+Trained with ~310,000 triplets, tested on 100 queries, top 1,000, candidate document size ~80,000: **MRR = 0.208**
 
-Trained with ~350,000 triplets (train+val combined), tested on 100 queries, top 1,000, candidate document size = ~80,000: **MRR = 0.212** 
+Trained with ~350,000 triplets (train+val combined), tested on 100 queries, top 1,000, candidate document size ~80,000: **MRR = 0.212** 
 
 
 #### Validating on a single query example 
