@@ -1,3 +1,2 @@
 - BM25 
-- TF-IDF 
-- SBERT 
+- BM25L
