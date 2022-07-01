@@ -33,10 +33,10 @@ class TripletData(Dataset):
 class custom_collate(object):
     def __init__(self):
         self.tokenizer = AutoTokenizer.from_pretrained("tanapatentlm/patentdeberta_base_spec_1024_pwi")
-        self.seq_len = 20
-        self.window_size = 225
+        self.seq_len = 10
+        self.window_size = 128
 
-    def chunk_tokens(self, tokens, overlap=20, chunk_size=225):
+    def chunk_tokens(self, tokens, overlap=12, chunk_size=128):
         total, partial = [], []
         if len(tokens) // (chunk_size - overlap) > 0:
             n = len(tokens) // (chunk_size - overlap)
@@ -172,7 +172,7 @@ class PositionalEncoding(torch.nn.Module):
 
 '''
 Simplified Hi-Transformer architecture (closer to PARADE)
-M = 20, K = 225 tokens
+M = 10, K = 128 tokens
 using only claims data for fine-tuning
 '''
 class Hi_DeBERTa_Ranker(pl.LightningModule):
@@ -198,8 +198,8 @@ class Hi_DeBERTa_Ranker(pl.LightningModule):
         self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers=6)
         self.attentive_pooling = AttentivePooling(768)
         self.metric = torch.nn.TripletMarginLoss()
-        self.seq_len = 20
-        self.window_size = 225
+        self.seq_len = 10
+        self.window_size = 128
         self.train_dataloader_length = train_dataloader_length
 
     def forward(self, input_ids, attention_mask):
@@ -234,6 +234,7 @@ class Hi_DeBERTa_Ranker(pl.LightningModule):
         n_emb = self(n_input_ids, n_attn_masks)
         loss = self.calc_loss(q_emb, p_emb, n_emb)
         self.log('train_loss', loss, batch_size=len(batch))
+        self.log('val_loss', 1) 
         return {'loss':loss}
 
     def validation_step(self, batch, batch_nb):
@@ -242,13 +243,14 @@ class Hi_DeBERTa_Ranker(pl.LightningModule):
         q_emb = self(q_input_ids, q_attn_masks)
         p_emb = self(p_input_ids, p_attn_masks)
         n_emb = self(n_input_ids, n_attn_masks)
-        loss = self.calc_loss(q_emb, p_emb, n_emb)
+        loss = self.calc_loss(q_emb, p_emb, n_emb)        
         self.log('val_loss', loss, batch_size=len(batch))
         return {'val_loss':loss}
-
+        
     def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        print(f"\nEpoch {self.current_epoch} | avg_loss:{avg_loss}\n")
+        self.log('val_loss', avg_loss) 
+        print(f"\nEpoch {self.current_epoch} | avg_val_loss:{avg_loss}\n")
 
     def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
         q_input_ids, q_attn_masks, p_input_ids, p_attn_masks, n_input_ids, n_attn_masks = zip(*batch)
@@ -281,15 +283,18 @@ if __name__ == "__main__":
     update_hparams(hparams, vars(args))
 
     train_set = TripletData("../storage/patent_experiments/FGH_claim_triplet_v0.1s/train")
-    val_set = TripletData("..storage/patent_experiments/FGH_claim_triplet_v0.1s/valid")
+    val_set = TripletData("../storage/patent_experiments/FGH_claim_triplet_v0.1s/valid")
     collate = custom_collate()
 
-    train_dataloader = DataLoader(train_set, batch_size = hparams.batch_size, num_workers = hparams.num_workers, collate_fn = collate)
-    valid_dataloader = DataLoader(val_set, batch_size = hparams.batch_size, num_workers = hparams.num_workers, collate_fn = collate)
+    train_dataloader = DataLoader(train_set, batch_size = hparams.batch_size, num_workers = hparams.num_workers, collate_fn = collate, shuffle = True)
+    valid_dataloader = DataLoader(val_set, batch_size = hparams.batch_size, num_workers = hparams.num_workers, collate_fn = collate, shuffle = False)
 
     model = Hi_DeBERTa_Ranker(int(len(train_dataloader)), hparams)
-
-    # print(model)
+    
+    #print("====================================") 
+    #print(len(train_dataloader), len(valid_dataloader))
+    #print("====================================")
+    
 
     if hparams.resume_train:
         model = model.load_from_checkpoint(hparams.resume_train)
@@ -299,9 +304,9 @@ if __name__ == "__main__":
 
     ckpt_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
-        dirpath="../storage/checkpoints/deberta_base_specs_1024_pwi_hierarchical",
-        filename="checkpoints-{epoch:02d}-{val_loss:.2f}",
-        save_top_k=5,
+        dirpath="../storage/checkpoints/deberta_base_spec_parade_2gpu",
+        filename="deberta_parade_checkpoints-{epoch:02d}-{train_loss:.2f}-{val_loss:.2f}",
+        save_top_k=3,
         mode="min",
     )
 
