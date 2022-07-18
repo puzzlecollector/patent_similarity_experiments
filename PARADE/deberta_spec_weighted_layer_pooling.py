@@ -195,7 +195,7 @@ class WeightedLayerPooling(nn.Module):
 '''
 Simplified Hi-Transformer architecture (closer to PARADE)
 M = 10, K = 128 tokens
-using only claims data for fine-tuning
+using specs (title + abstract + claims) data for fine-tuning
 '''
 class Hi_DeBERTa_Ranker(pl.LightningModule):
     def __init__(self, train_dataloader_length, hparams=dict()):
