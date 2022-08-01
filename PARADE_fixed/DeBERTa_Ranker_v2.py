@@ -176,7 +176,7 @@ class DeBERTa_Ranker(torch.nn.Module):
 model = DeBERTa_Ranker()
 model.cuda()
 
-accumulation_steps = 10 # simulate a batch size of 120 
+accumulation_steps = 20 # simulate a batch size of 12*20 = 240 
 
 loss_func = nn.TripletMarginWithDistanceLoss(distance_function = lambda x, y: 1.0 - F.cosine_similarity(x,y))  
 optimizer = AdamW(model.parameters(), lr=2e-5, eps=1e-8) 
