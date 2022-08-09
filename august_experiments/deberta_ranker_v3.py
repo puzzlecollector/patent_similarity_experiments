@@ -69,9 +69,9 @@ class custom_collate_use_metric_learning(object):
             first_p = self.clean_text(p_splitted[0]) 
             first_n = self.clean_text(n_splitted[0]) 
             
-            encoded_q = encoded_inputs = self.tokenizer(first_q, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True) 
-            encoded_p = encoded_inputs = self.tokenizer(first_p, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True)
-            encoded_n = encoded_inputs = self.tokenizer(first_n, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True)
+            encoded_q = self.tokenizer(first_q, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True) 
+            encoded_p = self.tokenizer(first_p, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True)
+            encoded_n = self.tokenizer(first_n, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True)
             
             input_ids.append(encoded_q['input_ids']) 
             attn_masks.append(encoded_q['attention_mask']) 
@@ -120,11 +120,11 @@ class custom_collate(object):
             first_p = self.clean_text(p_splitted[0]) 
             first_n = self.clean_text(n_splitted[0]) 
             
-            encoded_q = encoded_inputs = self.tokenizer(first_q, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True) 
+            encoded_q = self.tokenizer(first_q, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True) 
             
-            encoded_p = encoded_inputs = self.tokenizer(first_p, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True)
+            encoded_p = self.tokenizer(first_p, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True)
             
-            encoded_n = encoded_inputs = self.tokenizer(first_n, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True)
+            encoded_n = self.tokenizer(first_n, return_tensors='pt', max_length=self.chunk_size, padding='max_length', truncation=True)
             
             qb_input_ids[idx] = encoded_q['input_ids'] 
             qb_attn_masks[idx] = encoded_q['attention_mask'] 
