@@ -209,7 +209,7 @@ for epoch_i in tqdm(range(epochs), desc="Epochs", position=0, leave=True, total=
         for step, batch in enumerate(tepoch):
             if step%1000==0 and step > 0:
                 print("saving intermediate checkpoint") 
-                torch.save(model.state_dict(), "../storage/DEBERTA_Ranker_v2_intermediate_checkpoint_epoch_{}_steps_{}.pt".format(epoch_i+1, step)) 
+                torch.save(model.state_dict(), "../storage/DEBERTA_Ranker_v3_intermediate_checkpoint_epoch_{}_steps_{}.pt".format(epoch_i+1, step)) 
             batch = tuple(t.to(device) for t in batch) 
             input_ids, attn_masks, labels = batch
             embeddings = model(input_ids, attn_masks) 
@@ -246,4 +246,4 @@ for epoch_i in tqdm(range(epochs), desc="Epochs", position=0, leave=True, total=
     val_losses.append(avg_val_loss) 
     
     print("saving checkpoint")  
-    torch.save(model.state_dict(), "../storage/DEBERTA_Ranker_v2_epoch_{}_train_loss_{}_val_loss_{}.pt".format(epoch_i+1, avg_train_loss, avg_val_loss))  
+    torch.save(model.state_dict(), "../storage/DEBERTA_Ranker_v3_epoch_{}_train_loss_{}_val_loss_{}.pt".format(epoch_i+1, avg_train_loss, avg_val_loss))  
