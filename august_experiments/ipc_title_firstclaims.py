@@ -285,10 +285,9 @@ for epoch_i in tqdm(range(epochs), desc="Epochs", position=0, leave=True, total=
         for step, batch in enumerate(tepoch):
             if step%3000==0 and step > 0:
                 print("saving intermediate checkpoint") 
-                # this is the corect validation loop  
                 val_loss = 0.0 
                 model.eval() 
-                for step, val_batch in tqdm(enumerate(validation_dataloader), desc="Validating", position=0, leave=True, total=len(validation_dataloader)):
+                for val_step, val_batch in tqdm(enumerate(validation_dataloader), desc="Validating", position=0, leave=True, total=len(validation_dataloader)):
                     val_batch = tuple(t.to(device) for t in val_batch) 
                     q_input_ids, q_input_mask, p_input_ids, p_input_mask, n_input_ids, n_input_mask = val_batch 
                     with torch.no_grad():
