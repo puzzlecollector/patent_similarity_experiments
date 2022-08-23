@@ -9,6 +9,7 @@ import math
 from datetime import datetime 
 from transformers import AutoTokenizer, AutoModel 
 from tqdm import tqdm 
+import pickle 
 
 df = pd.read_excel("0814_라벨링세트_6주차_병합.xlsx") 
 
@@ -64,7 +65,7 @@ for idx, (train_idxs, val_idxs) in enumerate(cv.split(queries, cat_labels, query
         eval_s1.append(val_queries[i]) 
         eval_s2.append(val_candidates[i]) 
         eval_scores.append(val_labels[i]) 
-    train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=64) 
+    train_dataloader = DataLoader(train_examples[:1000], shuffle=True, batch_size=64) 
     train_loss = losses.CosineSimilarityLoss(model=model) 
     evaluator = evaluation.EmbeddingSimilarityEvaluator(eval_s1, eval_s2, eval_scores) 
     warmup_steps = math.ceil(len(train_dataloader)*num_epochs*0.1) 
@@ -97,7 +98,8 @@ for idx, (train_idxs, val_idxs) in enumerate(cv.split(queries, cat_labels, query
     
     print("val correlation = {}".format(val_corr)) 
     print("val accuracy = {}".format(val_accuracy)) 
-        
+    
+    
 print(np.mean(val_correlations))
 print(np.mean(val_accuracies)) 
 
