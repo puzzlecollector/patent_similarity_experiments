@@ -1,0 +1,14 @@
+train_data_path: "../storage/train_triplet.csv"
+val_data_path: "../storage/valid_triplet.csv"
+test_data_path: "../storage/test_triplet.csv"
+model_path: "checkpoint"
+load_chkpt: null
+name: "Patent_DeBERTa_Large"
+
+epochs: 3
+batch_size: 12
+additional_special_tokens: ["[IPC]", "[TTL]", "[CLMS]", "[ABST]"]
+weight_decay: 0.0
+lr: 2e-5
+adam_epsilon: 1e-8
+warmup_steps: 100
