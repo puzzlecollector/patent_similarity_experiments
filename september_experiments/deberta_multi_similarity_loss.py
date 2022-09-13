@@ -3,7 +3,7 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-from torch.utils.data import Dataset, TensorDataset, DataLoader, RandomSampler, SequentialSampler, IterableDataset
+from torch.utils.data import Dataset, TensorDataset, DataLoader, RandomSampler, SequentialSampler, IterableDatset
 from pytorch_metric_learning import miners, losses
 from pytorch_metric_learning.distances import CosineSimilarity
 import sys
@@ -45,29 +45,27 @@ class TripletData(Dataset):
                     self.data.append(data)
                 except:
                     continue
+
     def __getitem__(self, index):
         return self.data[index]
+
     def __len__(self):
         return len(self.data)
 
-
 class custom_collate(object):
-    def __init__(self,
-                 is_test=False,
-                 plm="tanapatentlm/patentdeberta_base_spec_1024_pwi"):
+    def __init__(self, plm="tanapatentlm/patentdeberta_large_spec_128_pwi"):
         self.tokenizer = AutoTokenizer.from_pretrained(plm)
-        # regular token -> special token
         self.tokenizer.add_special_tokens({"additional_special_tokens": ["[IPC]", "[TTL]", "[CLMS]", "[ABST]"]})
         self.chunk_size = 512
-        self.is_test = is_test
+
     def clean_text(self, t):
         x = re.sub("\d+","",t)
         x = x.replace("\n"," ")
         x = x.strip()
         return x
+
     def __call__(self, batch):
-        ret = [] # for inference
-        input_ids, attn_masks, labels = [], [], [] # for training and validation
+        input_ids, attn_masks, labels = [], [], []
         ids = 0
         for idx, triplet in enumerate(batch):
             try:
@@ -78,7 +76,6 @@ class custom_collate(object):
                     p = f.read()
                 with Path(negative_txt).open("r", encoding="utf8") as f:
                     n = f.read()
-
                 q_ttl = re.search("<TTL>([\s\S]*?)<IPC>", q).group(1)
                 q_ttl = q_ttl.lower()
                 q_ipc = re.search("<IPC>([\s\S]*?)<ABST>", q).group(1)
@@ -113,7 +110,7 @@ class custom_collate(object):
                     p_text_input += "[CLMS]" + p_clean_ind_clms[i]
                 encoded_p = self.tokenizer(p_text_input, return_tensors="pt", max_length=self.chunk_size, padding="max_length", truncation=True)
 
-                n_ttl = re.search("<TTL>([\s\S]*?)<IPC>", n).group(1)
+                                n_ttl = re.search("<TTL>([\s\S]*?)<IPC>", n).group(1)
                 n_ttl = n_ttl.lower()
                 n_ipc = re.search("<IPC>([\s\S]*?)<ABST>", n).group(1)
                 n_ipc = n_ipc[:3]
@@ -130,113 +127,47 @@ class custom_collate(object):
                     n_text_input += "[CLMS]" + n_clean_ind_clms[i]
                 encoded_n = self.tokenizer(n_text_input, return_tensors="pt", max_length=self.chunk_size, padding="max_length", truncation=True)
 
-                if not self.is_test:
-                    input_ids.append(encoded_q["input_ids"])
-                    attn_masks.append(encoded_q["attention_mask"])
-                    labels.append(ids*2)
+                input_ids.append(encoded_q["input_ids"])
+                attn_masks.append(encoded_q["attention_mask"])
+                labels.append(ids*2)
 
-                    input_ids.append(encoded_p["input_ids"])
-                    attn_masks.append(encoded_p["attention_mask"])
-                    labels.append(ids*2)
+                input_ids.append(encoded_p["input_ids"])
+                attn_masks.append(encoded_p["attention_mask"])
+                labels.append(ids*2)
 
-                    input_ids.append(encoded_n["input_ids"])
-                    attn_masks.append(encoded_n["attention_mask"])
-                    labels.append(ids*2 + 1)
-                    ids += 1
-                else:
-                    ret.append([encoded_q["input_ids"],
-                                encoded_q["attention_mask"],
-                                encoded_p["input_ids"],
-                                encoded_p["attention_mask"],
-                                encoded_n["input_ids"],
-                                encoded_n["attention_mask"]])
+                input_ids.append(encoded_n["input_ids"])
+                attn_masks.append(encoded_n["attention_mask"])
+                labels.append(ids*2 + 1)
+                ids += 1
             except:
                 continue
-
-        if self.is_test == False:
-            input_ids = torch.stack(input_ids, dim=0).squeeze(dim=1)
-            attn_masks = torch.stack(attn_masks, dim=0).squeeze(dim=1)
-            labels = torch.tensor(labels, dtype=int)
-            return input_ids, attn_masks, labels
-        else:
-            return ret
-
-
-class IsoBN(nn.Module):
-    def __init__(self, config):
-        super(IsoBN, self).__init__()
-        self.cov = torch.zeros(config.hidden_size, config.hidden_size).cuda()
-        self.std = torch.zeros(config.hidden_size).cuda()
-    def forward(self, inputs, momentum=0.05, eps=1e-3, beta=0.5):
-        if self.training:
-            x = inputs.detach()
-            n = x.size(0)
-            mean = x.mean(dim=0)
-            y = x - mean.unsqueeze(0)
-            std = (y**2).mean(0) ** 0.5
-            cov = (y.t() @ y) / n
-            self.cov.data += momentum * (cov.data - self.cov.data)
-            self.std.data += momentum * (std.data - self.std.data)
-        corr = torch.clamp(self.cov / torch.ger(self.std, self.std), -1, 1)
-        gamma = (corr ** 2).mean(1)
-        denorm = (gamma * self.std)
-        scale = 1 / (denorm + eps) ** beta
-        E = torch.diag(self.cov).sum()
-        new_E = (torch.diag(self.cov) * (scale ** 2)).sum()
-        m = (E / (new_E + eps)) ** 0.5
-        scale *= m
-        return inputs * scale.unsqueeze(0).detach()
-        
+        input_ids = torch.stack(input_ids, dim=0).squeeze(dim=1)
+        attn_masks = torch.stack(attn_masks, dim=0).squeeze(dim=1)
+        labels = torch.tensor(labels, dtype=int)
+        return input_ids, attn_masks, labels
 
 class NeuralRanker(pl.LightningModule):
-    def __init__(self,
-                 hparams=dict(),
-                 plm="tanapatentlm/patentdeberta_base_spec_1024_pwi",
-                 is_train=True,
-                 loss_type="ContrastiveLoss", 
-                 use_miner=True):
+    def __init__(self, hparams=dict(), plm="tanapatentlm/patentdeberta_large_spec_128_pwi", loss_type="ContrastiveLoss", use_miner=True):
         super(NeuralRanker, self).__init__()
         self.hparams.update(hparams)
         self.save_hyperparameters(ignore="hparams")
         self.tokenizer = AutoTokenizer.from_pretrained(plm)
         self.config = AutoConfig.from_pretrained(plm)
-        self.is_train = is_train 
-        self.loss_type = loss_type 
-        self.use_miner = use_miner 
-        
-        
-        if plm == "tanapatentlm/patentdeberta_base_spec_1024_pwi": 
-            print("initialize PLM from previous checkpoint trained on FGH_v0.3.1")
-            self.net = AutoModel.from_pretrained(plm)
-            state_dict = torch.load(hparams["checkpoint"], map_location=self.device)
-            new_weights = self.net.state_dict()
-            old_weights = list(state_dict.items())
-            i = 0
-            for k, _ in new_weights.items():
-                new_weights[k] = old_weights[i][1]
-                i += 1
-            self.net.load_state_dict(new_weights)
-        else: 
-            self.net = AutoModel.from_pretrained(plm) 
-
-        if self.is_train == False:
-            self.net.eval()  # change to evaluation mode
-            
+        self.loss_type = loss_type
+        self.use_miner = use_miner
+        self.net = AutoModel.from_pretrained(plm)
         if self.loss_type == "ContrastiveLoss":
-            self.metric = losses.ContrastiveLoss()  # default is L2 distance
-            # # change cosine similarity
-            # self.metric = losses.ContrastiveLoss(
-            #     pos_margin=1, neg_margin=0,
-            #     distance=CosineSimilarity(),
-            # )
+            self.metric = losses.ContrastiveLoss()
+            # # change distance metric to cosine similarity
+            # self.metric = losses.ContrastiveLoss(pos_margin=1, neg_margin=0, distance=CosineSimilarity())
         elif self.loss_type == "TripletMarginLoss":
-            self.metric = losses.TripletMarginLoss() 
+            self.metric = losses.TripletMarginLoss()
         elif self.loss_type == "MultiSimilarityLoss":
-            self.metric = losses.MultiSimilarityLoss() 
-            
-        if self.use_miner: 
+            self.metric = losses.MultiSimilarityLoss()
+
+        if self.use_miner:
             self.miner = miners.MultiSimilarityMiner()
-        
+
         if "additional_special_tokens" in self.hparams and self.hparams["additional_special_tokens"]:
             additional_special_tokens = self.hparams["additional_special_tokens"]
             self.tokenizer.add_special_tokens({"additional_special_tokens": additional_special_tokens})
@@ -268,10 +199,10 @@ class NeuralRanker(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         input_ids, attn_masks, labels = batch
         embeddings = self(input_ids, attn_masks)
-        if self.use_miner: 
+        if self.use_miner:
             hard_pairs = self.miner(embeddings, labels)
-            loss = self.metric(embeddings, labels, hard_pairs) 
-        else: 
+            loss = self.metric(embeddings, labels, hard_pairs)
+        else:
             loss = self.metric(embeddings, labels)
         self.log("train_loss", loss, batch_size=len(batch))
         return {"loss": loss}
@@ -287,68 +218,60 @@ class NeuralRanker(pl.LightningModule):
         avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
         print(f"\nEpoch {self.current_epoch} | avg_loss:{avg_loss}\n")
 
+    # for inference
     def predict_step(self, batch, batch_idx: int, dataloader_idx: int=0):
-        q_input_ids, q_attn_masks, p_input_ids, p_attn_masks, n_input_ids, n_attn_masks = zip(*batch)
+        q_input_ids, q_attn_masks = batch["q"]["input_ids"], batch["q"]["attention_mask"]
         q_emb = self(q_input_ids, q_attn_masks)
-        p_emb = self(p_input_ids, p_attn_masks)
-        n_emb = self(n_input_ids, n_attn_masks)
-        return q_emb, p_emb, n_emb
+        return q_emb
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--setting", "-s", type=str, default="default.yaml", help="Experiment settings")
+    parser.add_argument("--setting", "-s", type=str, default="deberta_large_default.yaml", help="Experiment settings")
     args = parser.parse_args(args=[])
     hparams = addict.Addict(dict(load_hparams_from_yaml(args.setting)))
 
+
     train_set = TripletData("./FGH_spec_ind_claim_triplet_v1.4.1s/train_triplet.csv")
     valid_set = TripletData("./FGH_spec_ind_claim_triplet_v1.4.1s/valid_triplet.csv")
-    collate = custom_collate(is_test=False)
+    collate = custom_collate()
 
     train_dataloader = DataLoader(train_set, batch_size=hparams.batch_size, collate_fn=collate, shuffle=True)
     valid_dataloader = DataLoader(valid_set, batch_size=hparams.batch_size, collate_fn=collate, shuffle=False)
 
-    model = NeuralRanker(hparams, 
+    model = NeuralRanker(hparams,
                          loss_type = "MultiSimilarityLoss")
 
     ckpt_callback = pl.callbacks.ModelCheckpoint(
         monitor="val_loss",
-        dirpath="./checkpoint/v1.4.1s_experiments/DeBERTa_MultiSimilarityLoss/",
+        dirpath="./checkpoint/v1.4.1s_experiments/DeBERTa_Large/MultiSimilarityLoss/",
         filename="epoch_end_checkpoints-{epoch:02d}-{val_loss:.8f}",
         save_top_k=3,
         mode="min",
         save_last=True  # When ``True``, saves an exact copy of the checkpoint to a file `last.ckpt` whenever a checkpoint file gets saved.
     )
-    
-    ckpt_callback_steps = pl.callbacks.ModelCheckpoint(
-        monitor="train_loss", 
-        dirpath="./checkpoint/v1.4.1s_experiments/DeBERTa_MultiSimilarityLoss/", 
-        every_n_train_steps = 1000,  
-        filename="intermediate_checkpoints-{epoch:02d}-{step:02d}-{train_loss:.8f}",
-        save_top_k=5, 
-        mode="min", 
-        save_last=True
-    ) 
 
-    # SWA = pl.callbacks.StochasticWeightAveraging(swa_lrs=1e-2)
+    ckpt_callback_steps = pl.callbacks.ModelCheckpoint(
+        monitor="train_loss",
+        dirpath="./checkpoint/v1.4.1s_experiments/DeBERTa_Large/MultiSimilarityLoss/",
+        every_n_train_steps = 1000,
+        filename="intermediate_checkpoints-{epoch:02d}-{step:02d}-{train_loss:.8f}",
+        save_top_k=5,
+        mode="min",
+        save_last=True
+    )
+
+    SWA = pl.callbacks.StochasticWeightAveraging(swa_lrs=1e-2)
 
     device_cnt = torch.cuda.device_count()
-
-    print("device count = {}".format(device_cnt)) 
+    print("device count = {}".format(device_cnt))
 
     trainer = pl.Trainer(gpus=device_cnt,
                          max_epochs=hparams.epochs,
                          strategy="ddp" if device_cnt > 1 else None,
-                         callbacks=[ckpt_callback, ckpt_callback_steps],
+                         callbacks=[ckpt_callback, ckpt_callback_steps, SWA],
                          gradient_clip_val=1.0,
                          accumulate_grad_batches=10,
-                         # auto_lr_find=True,
-                         num_sanity_val_steps=20
-                         )
-
-    # run learning rate finder, results override hparams.learning_rate  ###############################################
-    # call tune to find the lr
-    # trainer.tune(model, train_dataloaders=train_dataloader, val_dataloaders=valid_dataloader)
+                         num_sanity_val_steps=20)
 
     print("Start training model!")
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=valid_dataloader)
-
