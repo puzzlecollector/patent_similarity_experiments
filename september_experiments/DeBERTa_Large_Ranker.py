@@ -165,7 +165,7 @@ class NeuralRanker(pl.LightningModule):
         elif self.loss_type == "MultiSimilarityLoss":
             self.metric = losses.MultiSimilarityLoss()
 
-        if self.user_miner:
+        if self.use_miner:
             self.miner = miners.MultiSimilarityMiner()
 
         if "additional_special_tokens" in self.hparams and self.hparams["additional_special_tokens"]:
