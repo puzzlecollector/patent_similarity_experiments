@@ -30,6 +30,32 @@ import argparse
 import faiss
 import pickle 
 
+class TripletData(Dataset):
+    """Patent document as txt file"""
+    def __init__(self, root: Path, is_debug=False):
+        super().__init__()
+        self.data = []
+        if is_debug:
+            with (root / "test_triplet.csv").open("r", encoding="utf8") as f:
+                for i, triplet in enumerate(f):
+                    if i >= 100000: break  # pylint: disable=multiple-statements
+                    query, positive, negative = triplet.strip().split(",")
+                    data = []
+                    data.append(root / f"{query}.txt")
+                    data.append(root / f"{positive}.txt")
+                    data.append(root / f"{negative}.txt")
+                    self.data.append(data)
+        else:
+            for fn in root.glob("*.txt"):
+                self.data.append([fn])
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+
 data_path = Path("../storage/FGH_spec_ind_claim_triplet_v1.4.1s/")
 model_pt_path = Path("epcoh_end_checkpoints-epoch=00-val_loss=0.20442404.ckpt")
 emb_dim = 1024
