@@ -125,27 +125,31 @@ tokenizer = AutoTokenizer.from_pretrained("tanapatentlm/patentdeberta_large_spec
 train_input_ids, train_attn_masks = [], [] 
 valid_input_ids, valid_attn_masks = [], [] 
 
+max_len = 256 # 512 
+
 for i in tqdm(range(len(train_queries)), position=0, leave=True): 
-    encoded_input = tokenizer(train_queries[i], train_candidates[i], max_length=512, truncation=True, padding="max_length") 
+    encoded_input = tokenizer(train_queries[i], train_candidates[i], max_length=max_len, truncation=True, padding="max_length") 
     train_input_ids.append(encoded_input["input_ids"]) 
     train_attn_masks.append(encoded_input["attention_mask"]) 
 
 for i in tqdm(range(len(valid_queries)), position=0, leave=True): 
-    encoded_input = tokenizer(valid_queries[i], valid_candidates[i], max_length=512, truncation=True, padding="max_length") 
+    encoded_input = tokenizer(valid_queries[i], valid_candidates[i], max_length=max_len, truncation=True, padding="max_length") 
     valid_input_ids.append(encoded_input["input_ids"])
     valid_attn_masks.append(encoded_input["attention_mask"]) 
     
 train_input_ids = torch.tensor(train_input_ids, dtype=int) 
 train_attn_masks = torch.tensor(train_attn_masks, dtype=int) 
 train_labels = torch.tensor(train_labels).float() 
+train_labels = torch.reshape(train_labels, (-1,1)) 
 
 valid_input_ids = torch.tensor(valid_input_ids, dtype=int) 
 valid_attn_masks = torch.tensor(valid_attn_masks, dtype=int) 
 valid_labels = torch.tensor(valid_labels).float() 
+valid_labels = torch.reshape(valid_labels, (-1,1)) 
 
 print(train_input_ids.shape, train_attn_masks.shape, train_labels.shape, valid_input_ids.shape, valid_attn_masks.shape, valid_labels.shape)
 
-batch_size = 20
+batch_size = 32 #24
 
 train_data = TensorDataset(train_input_ids, train_attn_masks, train_labels) 
 train_sampler = RandomSampler(train_data) 
@@ -154,6 +158,8 @@ train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=batc
 val_data = TensorDataset(valid_input_ids, valid_attn_masks, valid_labels) 
 val_sampler = SequentialSampler(val_data) 
 val_dataloader = DataLoader(val_data, sampler=val_sampler, batch_size=batch_size) 
+
+val_losses = [] 
 
 loss_func = RMSELoss() 
 model.cuda() 
@@ -191,7 +197,7 @@ for epcoh_i in tqdm(range(0, epochs), desc="Epochs", position=0, leave=True, tot
         batch = tuple(t.to(device) for t in batch) 
         b_input_ids, b_input_masks, b_labels = batch 
         with torch.no_grad(): 
-            outputs = model(b_input_+ids, b_input_masks) 
+            outputs = model(b_input_ids, b_input_masks) 
         loss = loss_func(outputs, b_labels) 
         val_loss += loss.item() 
     avg_val_loss = val_loss / len(val_dataloader) 
