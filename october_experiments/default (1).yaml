@@ -1,0 +1,19 @@
+train_data_path: "/nas/project/tanalysis/FGH_spec_ind_claim_triplet_v1.4.1s/train_triplet.csv" 
+val_data_path: "/nas/project/tanalysis/FGH_spec_ind_claim_triplet_v1.4.1s/valid_triplet.csv" 
+test_data_path: "/nas/project/tanalysis/FGH_spec_ind_claim_triplet_v1.4.1s/test_triplet.csv"
+data_path: "/data/engines/sentence_ranker/load/FGH_spec_ind_claim_triplet_v1.4.1s/"
+output_path: "outputs"
+model_path: "checkpoints" 
+load_chkpt: null 
+name: "Patent_DeBERTa" 
+
+epochs: 10
+batch_size: 8
+additional_special_tokens: ["[IPC]", "[TTL]", "[CLMS]", "[ABST]"] 
+weight_decay: 0.0
+lr: 2e-5 
+adam_epsilon: 1e-8
+warmup_steps: 3000 
+
+checkpoint: "/pretrained/jjl/tanalysis/luke/epoch_end_checkpoints-epoch=02-val_loss=0.21482554.ckpt"
+
