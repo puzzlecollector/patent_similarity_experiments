@@ -71,6 +71,7 @@ fn2id = {fn[0].stem: idx for idx, fn in enumerate(dataset)}
 
 use_cosine_sim = True 
 
+'''
 if use_cosine_sim: 
     index = faiss.IndexIDMap2(faiss.IndexFlatIP(emb_dim)) 
 else: 
@@ -86,8 +87,18 @@ index.add_with_ids(emb_dict_values, np.array(list(emb_dict.keys())))
 
 print("saving faiss index...") 
 faiss.write_index(index, "DeBERTa-Large-epoch-2-index") 
+''' 
+
+if use_cosine_sim: 
+    faiss.normalize_L2(torch.stack(list(emb_dict.values()), dim = 0).numpy()) 
+
+print("reading saved index...") 
+
+index = faiss.read_index("DeBERTa-Large-epoch-2-index") 
+
 
 print("building gpu index...") 
+res = faiss.StandardGpuResources() 
 print(res) 
 index = faiss.index_cpu_to_gpu(res, 0, index) 
 
@@ -124,17 +135,17 @@ try:
             assert len(Q) == len(P) == len(p_ids) == len(query_buck) 
             
             if len(Q) == 10000:
-                try: 
-                    # calc faiss 
-                    q_embs = np.array(torch.stack(query_buck)) 
-                    b_distances, b_indices = index.search(q_embs, 1000) 
-                    rank = 1000 
-                    r_rank = 0 
-                    for indices in b_indices:
-                        indices = indices.tolist() 
-                        p_id = p_ids.pop(0) 
-                        q = Q.pop(0) 
-                        p = P.pop(0) 
+                # calc faiss 
+                q_embs = np.array(torch.stack(query_buck)) 
+                b_distances, b_indices = index.search(q_embs, 1000) 
+                rank = 1000 
+                r_rank = 0 
+                for indices in b_indices:
+                    indices = indices.tolist() 
+                    p_id = p_ids.pop(0) 
+                    q = Q.pop(0) 
+                    p = P.pop(0)
+                    try: 
                         if p_id in indices: 
                             rank = indices.index(p_id) 
                             r_rank = 1 / rank if rank <= 1000 else 0.
@@ -143,9 +154,9 @@ try:
                         df["positive"].append(p) 
                         df["predict"].append(indices[1]) 
                         df["rank"].append(rank) 
-                        df["r_rank"].append(r_rank) 
-                except: 
-                    continue 
+                        df["r_rank"].append(r_rank)
+                    except: 
+                        pass 
                 query_buck = []  
 except KeyboardInterrupt: 
     print("stop calculating...") 
